@@ -1,84 +1,80 @@
 package main
 
 import (
-	"github.com/golang-jwt/jwt/v4"
+	// "github.com/golang-jwt/jwt/v4"
+	"time"
 )
 
-// User represents a user in the system (students, teachers, admins)
+// Users
 type User struct {
-	UID      uint   `json:"uid"`
-	Email    string `json:"email"`
-	Password string `json:"password"` // User password, excluded from JSON
-	Role     string `json:"role"`     // User role: "student", "teacher", or "admin"
+	ID           uint      `json:"id" db:"id"`
+	UserName     string    `json:"user_name,omitempty" db:"user_name"`
+	Email        string    `json:"email,omitempty" db:"email"`
+	PasswordHash string    `json:"-" db:"password_hash"` // not serialized to JSON
+	Role         string    `json:"role" db:"role"`
+	CreatedAt    time.Time `json:"created_at,omitempty" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at,omitempty" db:"updated_at"`
 }
 
-// Person represents personal information for a user
+// Persons
 type Person struct {
-	ID        uint   `json:"id"`
-	UserID    uint   `json:"user_id"`              // Reference to users(uid)
-	FirstName string `json:"first_name"`           // First name
-	LastName  string `json:"last_name"`            // Last name
-	BirthDate string `json:"birth_date,omitempty"` // Birth date in YYYY-MM-DD format
-	Address   string `json:"address,omitempty"`    // Address
-	Phone     string `json:"phone,omitempty"`      // Phone number
+	UserID    uint      `json:"user_id" db:"user_id"`
+	FirstName string    `json:"first_name,omitempty" db:"first_name"`
+	LastName  string    `json:"last_name,omitempty" db:"last_name"`
+	Phone     string    `json:"phone,omitempty" db:"phone"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at"`
 }
 
-// Class represents a school class (group of students)
-type Class struct {
-	ID   uint   `json:"id"`
-	Name string `json:"name"` // Unique class name (e.g., "1A", "2B")
+// Cars
+type Car struct {
+	ID                uint      `json:"id" db:"id"`
+	OwnerID           *uint     `json:"owner_id,omitempty" db:"id_owner"` // nullable (ON DELETE SET NULL)
+	VIN               string    `json:"vin,omitempty" db:"vin"`
+	PlateNumber       string    `json:"plate_number,omitempty" db:"plate_number"`
+	Make              string    `json:"make,omitempty" db:"make"`
+	Model             string    `json:"model,omitempty" db:"model"`
+	Year              *int      `json:"year,omitempty" db:"year"`
+	LastMileage       *int      `json:"last_mileage,omitempty" db:"last_mileage"`
+	FuelType          string    `json:"fuel_type,omitempty" db:"fuel_type"`
+	EngineCapacity    *float64  `json:"engine_capacity,omitempty" db:"engine_capacity"`
+	EngineType        string    `json:"engine_type,omitempty" db:"engine_type"`
+	DefaultHourlyRate *float64  `json:"default_hourly_rate,omitempty" db:"default_hourly_rate"`
+	Notes             string    `json:"notes,omitempty" db:"notes"`
+	CreatedAt         time.Time `json:"created_at,omitempty" db:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at,omitempty" db:"updated_at"`
 }
 
-// Subject represents a school subject
-type Subject struct {
-	ID        uint   `json:"id"`
-	Name      string `json:"name"`       // Unique subject name (e.g., "Mathematics")
-	ClassName string `json:"class_name"` // Reference to classes(name)
-	TeacherID uint   `json:"teacher_id"` // Reference to users(uid)
+// Mechanic
+type Mechanic struct {
+	ID         uint      `json:"id" db:"id"` // FK -> Users.id, also PK
+	HourlyRate *float64  `json:"hourly_rate,omitempty" db:"hourly_rate"`
+	CreatedAt  time.Time `json:"created_at,omitempty" db:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at,omitempty" db:"updated_at"`
 }
 
-// StudentSubject represents a student-subject assignment
-type StudentSubject struct {
-	ID        uint `json:"id"`
-	UserID    uint `json:"user_id"`    // Reference to users(uid)
-	SubjectID uint `json:"subject_id"` // Reference to subjects(id)
+// RepairOrders
+type RepairOrder struct {
+	ID          uint      `json:"id" db:"id"`
+	CarID       uint      `json:"car_id" db:"id_car"`
+	Title       string    `json:"title,omitempty" db:"title"`
+	Description string    `json:"description,omitempty" db:"description"`
+	TotalCost   *float64  `json:"total_cost,omitempty" db:"total_cost"`
+	CreatedAt   time.Time `json:"created_at,omitempty" db:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at,omitempty" db:"updated_at"`
 }
 
-// TeacherSubject represents a teacher-subject assignment
-type TeacherSubject struct {
-	ID        uint `json:"id"`
-	UserID    uint `json:"user_id"`    // Reference to users(uid)
-	SubjectID uint `json:"subject_id"` // Reference to subjects(id)
-}
-
-// Grade represents a grade, comment, or custom value for a student
-type Grade struct {
-	ID        uint   `json:"id"`
-	UserID    uint   `json:"user_id"`    // Reference to users(uid)
-	SubjectID uint   `json:"subject_id"` // Reference to subjects(id)
-	Grade     string `json:"grade"`      // Numeric grade, comment, or custom value
-	GradeType string `json:"grade_type"` // Type: "numeric", "comment", or "custom"
-	Date      string `json:"date"`       // Date of entry in YYYY-MM-DD format
-}
-
-// ClassMember represents a user (student or teacher) assigned to a class
-type ClassMember struct {
-	ID        uint   `json:"id"`
-	UserID    uint   `json:"user_id"`    // Reference to users(uid)
-	ClassName string `json:"class_name"` // Reference to classes(name)
-}
-
-// TimetableEntry represents a single timetable entry
-type TimetableEntry struct {
-	ID          uint   `json:"id"`
-	Day         string `json:"day"`          // Day of the week (e.g., "Monday")
-	SubjectID   uint   `json:"subject_id"`   // Reference to subjects(id)
-	ClassPeriod uint   `json:"class_period"` // Class period number (e.g., 1, 2, 3)
-	StartTime   string `json:"start_time"`   // Start time in HH:MM format
-	EndTime     string `json:"end_time"`     // End time in HH:MM format
-	Room        string `json:"room"`         // Room number or name
-	TeacherID   uint   `json:"teacher_id"`   // Reference to users(uid)
-	ClassName   string `json:"class_name"`   // Reference to classes(name)
+// RepairTasks
+type RepairTask struct {
+	ID          uint      `json:"id" db:"id"`
+	OrderID     uint      `json:"order_id" db:"order_id"`
+	MechanicID  uint      `json:"mechanic_id" db:"mechanic_id"`
+	Title       string    `json:"title" db:"title"`
+	Description string    `json:"description,omitempty" db:"description"`
+	Hours       *float64  `json:"hours,omitempty" db:"hours"`
+	ImagePath   string    `json:"image_path,omitempty" db:"image_path"`
+	CreatedAt   time.Time `json:"created_at,omitempty" db:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at,omitempty" db:"updated_at"`
 }
 
 // AccessRequest represents a login request
@@ -88,34 +84,15 @@ type AccessRequest struct {
 	Argument interface{} `json:"argument"` // Additional data for the request
 }
 
-// Claims represents JWT claims for authentication
-type Claims struct {
-	Email string `json:"email"` // User email
-	Role  string `json:"role"`  // User role
-	jwt.StandardClaims
-}
+// // Claims represents JWT claims for authentication
+// type Claims struct {
+// 	Email string `json:"email"` // User email
+// 	Role  string `json:"role"`  // User role
+// 	jwt.StandardClaims
+// }
 
-// Input represents a password change request
-type Input struct {
-	OldPassword string `json:"old_password"` // Current password
-	NewPassword string `json:"new_password"` // New password
-}
-
-type Attendance struct {
-	ID        uint   `json:"id"`
-	UserID    uint   `json:"user_id"`    // Reference to users(uid)
-	SubjectID uint   `json:"subject_id"` // Reference to subjects(id)
-	Date      string `json:"date"`       // Date of attendance in YYYY-MM-DD format
-	Status    string `json:"status"`     // Attendance status: "present", "absent", or "late"
-}
-
-// Exam represents a exam or test
-type Exam struct {
-	ID          uint   `json:"id"`
-	ClassName   string `json:"class_name"`  // Reference to classes(name)
-	SubjectID   uint   `json:"subject_id"`  // Reference to subjects(id)
-	TeacherID   uint   `json:"teacher_id"`  // Reference to users(uid)
-	Date        string `json:"date"`        // Date of the exam in YYYY-MM-DD format
-	Type        string `json:"type"`        // Type of exam (e.g., "exam", "test", "quiz")
-	Description string `json:"description"` // Description of the exam
-}
+// // Input represents a password change request
+// type Input struct {
+// 	OldPassword string `json:"old_password"` // Current password
+// 	NewPassword string `json:"new_password"` // New password
+// }

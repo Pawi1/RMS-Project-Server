@@ -1,0 +1,11 @@
+config:
+  jwt_key: ""                   # secret key for signing JWTs
+  admin_email: ""               # initial admin email
+  admin_password_hash: ""       # bcript
+  db_path: "data.db"            # sqlite file path
+
+car_workshop:
+  name: "My Workshop"
+  description: "Auto repair shop"
+  image_path: ""             
+  owner: ""                  
