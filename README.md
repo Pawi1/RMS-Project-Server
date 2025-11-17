@@ -20,6 +20,10 @@ Public endpoints
 
 - GET /healthz
   - Returns DB status: `{ "status": "ok" }` or an error status.
+  - Example:
+    ```bash
+    curl -i http://127.0.0.1:10800/healthz
+    ```
 
 - POST /auth/login
   - Body (JSON):
@@ -30,6 +34,12 @@ Public endpoints
     ```json
     { "access_token": "...", "refresh_token": "..." }
     ```
+    - Example:
+      ```bash
+      curl -X POST http://127.0.0.1:10800/auth/login \
+        -H "Content-Type: application/json" \
+        -d '{"email":"admin@example.com","password":"secret"}'
+      ```
 
 - POST /auth/refresh
   - Body (JSON):
@@ -37,11 +47,21 @@ Public endpoints
     { "refresh_token": "<REFRESH_TOKEN>" }
     ```
   - Response (200): `{ "access_token": "..." }` — the new access token contains `role`.
+    - Example:
+      ```bash
+      curl -X POST http://127.0.0.1:10800/auth/refresh \
+        -H "Content-Type: application/json" \
+        -d '{"refresh_token":"<REFRESH_TOKEN>"}'
+      ```
 
 - GET /workshop
   - Returns workshop info from config `car_workshop`:
     ```json
     { "name": "My Workshop", "description": "Auto repair shop", "image_path": "", "owner": "" }
+    ```
+  - Example:
+    ```bash
+    curl http://127.0.0.1:10800/workshop
     ```
 
 Protected endpoints (require Bearer access token)
@@ -52,6 +72,10 @@ Authentication header: `Authorization: Bearer <ACCESS_TOKEN>`
 
 - GET /cars
   - Returns array of `Car` objects.
+  - Example (list cars):
+    ```bash
+    curl -H "Authorization: Bearer $ACCESS" http://127.0.0.1:10800/cars
+    ```
 
 - POST /cars
   - Body (JSON) example (fields map to DB columns):
@@ -73,11 +97,32 @@ Authentication header: `Authorization: Bearer <ACCESS_TOKEN>`
     ```
   - Response: created `Car` object (201)
 
+    - Example (create car):
+      ```bash
+      ACCESS="<ACCESS_TOKEN>"
+      curl -X POST http://127.0.0.1:10800/cars \
+        -H "Authorization: Bearer $ACCESS" \
+        -H "Content-Type: application/json" \
+        -d '{"owner_id":1,"plate_number":"ABC1234","vin":"1HGCM82633A004352","make":"Toyota","model":"Corolla","year":2015}'
+      ```
+
 - PATCH /cars/:id
   - Body: partial `Car` fields to update. Response: updated object.
+  - Example (patch):
+    ```bash
+    curl -X PATCH http://127.0.0.1:10800/cars/12 \
+      -H "Authorization: Bearer $ACCESS" \
+      -H "Content-Type: application/json" \
+      -d '{"notes":"Updated note"}'
+    ```
 
 - DELETE /cars/:id
   - Deletes the car (204 No Content).
+  - Example (delete):
+    ```bash
+    curl -X DELETE http://127.0.0.1:10800/cars/12 \
+      -H "Authorization: Bearer $ACCESS"
+    ```
 
 Example cURL to create a car:
 ```bash
@@ -96,6 +141,13 @@ User account endpoints (authenticated)
     { "user_name": "NewName", "email": "me@example.com" }
     ```
   - Response: updated `User` JSON.
+    - Example:
+      ```bash
+      curl -X PATCH http://127.0.0.1:10800/me \
+        -H "Authorization: Bearer $ACCESS" \
+        -H "Content-Type: application/json" \
+        -d '{"user_name":"NewName","email":"me@example.com"}'
+      ```
 
 - POST /me/password
   - Change password. Body:
@@ -103,10 +155,47 @@ User account endpoints (authenticated)
     { "old_password": "old", "new_password": "new" }
     ```
   - Response: 204 No Content on success.
+    - Example:
+      ```bash
+      curl -X POST http://127.0.0.1:10800/me/password \
+        -H "Authorization: Bearer $ACCESS" \
+        -H "Content-Type: application/json" \
+        -d '{"old_password":"old","new_password":"new"}'
+      ```
 
 Tokens and claims
 - Access tokens include `sub` (user id as string), `role` (string), `exp`, `iat`, `jti`.
 - Refresh tokens are minimal `RegisteredClaims` (`sub`, `exp`, `iat`, `jti`).
+
+Repair endpoints (roles: `admin`, `editor`, `operator`)
+
+- POST /orders
+  - Create a new repair order for a car.
+  - Body example:
+    ```json
+    { "car_id": 123, "title": "Brake service", "description": "Replace pads", "total_cost": 200.0 }
+    ```
+  - Example curl:
+    ```bash
+    curl -X POST http://127.0.0.1:10800/orders \
+      -H "Authorization: Bearer $ACCESS" \
+      -H "Content-Type: application/json" \
+      -d '{"car_id":123,"title":"Brake service","description":"Replace pads","total_cost":200}'
+    ```
+
+- POST /tasks
+  - Create a new task inside a repair order (assign to mechanic).
+  - Body example:
+    ```json
+    { "order_id": 456, "mechanic_id": 12, "title": "Replace brake pads", "hours": 1.5 }
+    ```
+  - Example curl:
+    ```bash
+    curl -X POST http://127.0.0.1:10800/tasks \
+      -H "Authorization: Bearer $ACCESS" \
+      -H "Content-Type: application/json" \
+      -d '{"order_id":456,"mechanic_id":12,"title":"Replace brake pads","hours":1.5}'
+    ```
 
 Configuration (`config/config.yml`)
 - `config.admin_email`, `config.admin_password` / `config.admin_password_hash` — initial admin account.

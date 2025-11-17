@@ -1,4 +1,4 @@
-package admin
+package operator
 
 import (
 	"net/http"
@@ -10,16 +10,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type adminPatchUserReq struct {
-	UserName     *string `json:"user_name"`
-	Email        *string `json:"email"`
-	Role         *string `json:"role"`
-	Password     *string `json:"password"`
-	PasswordHash *string `json:"password_hash"`
+type patchClientReq struct {
+	UserName *string `json:"user_name"`
+	Email    *string `json:"email"`
 }
 
-// PatchUserHandler allows admin to modify any user's fields.
-func PatchUserHandler(authSvc *svc.AuthService) gin.HandlerFunc {
+// PatchClientHandler allows operator/editor to update client users (restricted by router)
+func PatchClientHandler(authSvc *svc.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		idStr := c.Param("id")
 		id, err := strconv.Atoi(idStr)
@@ -27,42 +24,27 @@ func PatchUserHandler(authSvc *svc.AuthService) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 			return
 		}
-
-		var req adminPatchUserReq
+		var req patchClientReq
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
 			return
 		}
-
-		// load existing user
 		var u models.User
 		if err := authSvc.DB.First(&u, id).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 			return
 		}
-
-		// apply updates
+		// ensure target is client
+		if string(u.Role) != "client" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "can only modify client users"})
+			return
+		}
 		if req.UserName != nil {
 			u.UserName = req.UserName
 		}
 		if req.Email != nil {
 			u.Email = *req.Email
 		}
-		if req.Role != nil {
-			u.Role = models.Role(*req.Role)
-		}
-
-		if req.PasswordHash != nil && *req.PasswordHash != "" {
-			u.PasswordHash = *req.PasswordHash
-		} else if req.Password != nil {
-			h, err := svc.HashPassword(*req.Password)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "could not hash password"})
-				return
-			}
-			u.PasswordHash = h
-		}
-
 		if err := authSvc.DB.Save(&u).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
 			return

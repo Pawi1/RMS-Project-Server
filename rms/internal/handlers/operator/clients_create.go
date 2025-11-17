@@ -1,4 +1,4 @@
-package admin
+package operator
 
 import (
 	"net/http"
@@ -9,18 +9,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type createUserReq struct {
+type createClientReq struct {
 	UserName     *string `json:"user_name"`
 	Email        string  `json:"email" binding:"required"`
 	Password     *string `json:"password"`
 	PasswordHash *string `json:"password_hash"`
-	Role         string  `json:"role" binding:"required"`
 }
 
-// CreateUserHandler allows admin to create users of any role.
-func CreateUserHandler(authSvc *svc.AuthService) gin.HandlerFunc {
+// CreateClientHandler returns handler that creates a client user.
+func CreateClientHandler(authSvc *svc.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var req createUserReq
+		var req createClientReq
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 			return
@@ -41,11 +40,12 @@ func CreateUserHandler(authSvc *svc.AuthService) gin.HandlerFunc {
 			return
 		}
 
+		// caller role info is optional here; router already restricts caller
 		u := models.User{
 			UserName:     req.UserName,
 			Email:        req.Email,
 			PasswordHash: hash,
-			Role:         models.Role(req.Role),
+			Role:         models.Role("client"),
 		}
 		if err := authSvc.DB.Create(&u).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
