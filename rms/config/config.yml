@@ -1,0 +1,25 @@
+config:
+  admin_email: "admin@example.com"               # initial admin email
+  admin_password: "secretpassword"
+  admin_password_hash: "$2a$12$7SQIPwGNokl.7Li.CtcL4uHBO7AnxLLAniEh53xfG865DrJQvcBE2"       # bcript
+  db_path: "data/database.db"   # sqlite file path
+  https: false
+  port: 10800
+  ip: "0.0.0.0"
+  gin_mode: "debug"             # debug | release
+  trusted_proxies:
+    - "127.0.0.1"
+    - "::1"
+
+auth:
+  jwt_key: "super-secret-key"                   # secret key for signing JWTs
+  jwt_ttl: "24h"
+  refresh_token_ttl: "168h"
+  cors_allow_origins:
+    - "http://localhost:3000"
+  
+car_workshop:
+  name: "My Workshop"
+  description: "Auto repair shop"
+  image_path: ""             
+  owner: ""                  
