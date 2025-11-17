@@ -117,7 +117,3 @@ Configuration (`config/config.yml`)
 Debug tips
 - If you get `invalid token`, ensure the Authorization header contains the raw token without surrounding quotes.
 - If you get `forbidden`, verify the access token contains the `role` claim and the DB user role matches (`admin|editor|operator`).
-
-Next steps I can help with:
-- add detailed curl examples for every endpoint,
-- generate an OpenAPI spec or Postman collection from the routes.
