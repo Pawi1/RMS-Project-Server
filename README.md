@@ -64,20 +64,27 @@ Public endpoints
     curl http://127.0.0.1:10800/workshop
     ```
 
+
 Protected endpoints (require Bearer access token)
 
 Authentication header: `Authorization: Bearer <ACCESS_TOKEN>`
 
+Note: protected endpoints are mounted under role-specific prefixes in the running server. Common mounts are:
+
+- `/operator/...` — routes for operator role (also used by editor/admin where applicable)
+- `/admin/...` — admin routes
+- user routes such as `/me` remain at the top level
+
 1) Cars management — allowed roles: `admin`, `editor`, `operator`
 
-- GET /cars
+- GET `/operator/cars` and `/admin/cars`
   - Returns array of `Car` objects.
   - Example (list cars):
     ```bash
-    curl -H "Authorization: Bearer $ACCESS" http://127.0.0.1:10800/cars
+    curl -H "Authorization: Bearer $ACCESS" http://127.0.0.1:10800/operator/cars
     ```
 
-- POST /cars
+- POST `/operator/cars` and `/admin/cars`
   - Body (JSON) example (fields map to DB columns):
     ```json
     {
@@ -100,34 +107,34 @@ Authentication header: `Authorization: Bearer <ACCESS_TOKEN>`
     - Example (create car):
       ```bash
       ACCESS="<ACCESS_TOKEN>"
-      curl -X POST http://127.0.0.1:10800/cars \
+      curl -X POST http://127.0.0.1:10800/operator/cars \
         -H "Authorization: Bearer $ACCESS" \
         -H "Content-Type: application/json" \
         -d '{"owner_id":1,"plate_number":"ABC1234","vin":"1HGCM82633A004352","make":"Toyota","model":"Corolla","year":2015}'
       ```
 
-- PATCH /cars/:id
+- PATCH `/operator/cars/:id` (and `/admin/cars/:id`)
   - Body: partial `Car` fields to update. Response: updated object.
   - Example (patch):
     ```bash
-    curl -X PATCH http://127.0.0.1:10800/cars/12 \
+    curl -X PATCH http://127.0.0.1:10800/operator/cars/12 \
       -H "Authorization: Bearer $ACCESS" \
       -H "Content-Type: application/json" \
       -d '{"notes":"Updated note"}'
     ```
 
-- DELETE /cars/:id
+- DELETE `/operator/cars/:id` (and `/admin/cars/:id`)
   - Deletes the car (204 No Content).
   - Example (delete):
     ```bash
-    curl -X DELETE http://127.0.0.1:10800/cars/12 \
+    curl -X DELETE http://127.0.0.1:10800/operator/cars/12 \
       -H "Authorization: Bearer $ACCESS"
     ```
 
-Example cURL to create a car:
+Example cURL to create a car (operator namespace):
 ```bash
 ACCESS="<ACCESS_TOKEN>"
-curl -X POST http://127.0.0.1:10800/cars \
+curl -X POST http://127.0.0.1:10800/operator/cars \
   -H "Authorization: Bearer $ACCESS" \
   -H "Content-Type: application/json" \
   -d '{"owner_id":1, "plate_number":"ABC1234", "make":"Toyota", "model":"Corolla"}'
